@@ -1,1 +1,2 @@
-Debug/*
+*.VC.db
+**/Debug
