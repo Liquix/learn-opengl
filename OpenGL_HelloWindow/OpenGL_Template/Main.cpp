@@ -68,10 +68,17 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	
+
 	// Window setup
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	
+	int count;
+	GLFWmonitor** monitors = glfwGetMonitors(&count);
+	for (int i = 0; i < count; i++)
+		std::cout << "monitor[" << i << "] address: 0x" << monitors[i] << std::endl;
 
 	GLFWwindow* window = glfwCreateWindow(X_RESOLUTION, Y_RESOLUTION, "Learn OpenGL - Hello Window", NULL, NULL);
 	if (!window)
@@ -83,7 +90,7 @@ int main(int argc, char **argv)
 	}
 	glfwMakeContextCurrent(window);
 
-	// GLAD (OpenGL function pointer loader) init
+	// Initialize GLAD
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
 		std::cout << "Error: gladLoadGLLoader() failed" << std::endl;
