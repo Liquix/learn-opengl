@@ -8,24 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "Shader.h"
+
 #define X_RESOLUTION 640
 #define Y_RESOLUTION 480
 
 std::string vShaderName = "FirstVertex.vert";
 std::string fShaderName = "FirstFrag.frag";
-
-std::string loadShaderSrc(std::string fileName)
-{
-	std::ifstream tmpFile(fileName, std::ios::binary);
-	std::stringstream sstr;
-
-	if(tmpFile.good())	sstr << tmpFile.rdbuf() << "\n\0";
-	else return "";
-
-	std::string tmpStr = sstr.str();
-	tmpFile.close();
-	return tmpStr;
-}
 
 void handleError(int errorCode, const char* errorDescription)
 {
@@ -68,17 +57,17 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	
-
 	// Window setup
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	
+
+	/*
 	int count;
 	GLFWmonitor** monitors = glfwGetMonitors(&count);
 	for (int i = 0; i < count; i++)
-		std::cout << "monitor[" << i << "] address: 0x" << monitors[i] << std::endl;
+		std::cout << "monitor[" << i << "] address: " << monitors[i] << std::endl;
+	std::cout << "Primary monitor: " << glfwGetPrimaryMonitor() << std::endl; */
 
 	GLFWwindow* window = glfwCreateWindow(X_RESOLUTION, Y_RESOLUTION, "Learn OpenGL - Hello Window", NULL, NULL);
 	if (!window)
@@ -88,6 +77,7 @@ int main(int argc, char **argv)
 		glfwTerminate();
 		return -2;
 	}
+	glfwSetWindowPos(window, 2000, 100);
 	glfwMakeContextCurrent(window);
 
 	// Initialize GLAD
@@ -112,69 +102,24 @@ int main(int argc, char **argv)
 	glfwSetKeyCallback(window, keypressCallback);
 	
 	// Load shaders
-	std::string vShaderStr = loadShaderSrc(vShaderName);
-	const char * vShaderSrc = vShaderStr.c_str();
-	std::string fShaderStr = loadShaderSrc(fShaderName);
-	const char * fShaderSrc = fShaderStr.c_str();
-
-	// Compile shaders
-	unsigned vShader, fShader;
-	vShader = glCreateShader(GL_VERTEX_SHADER);
-	fShader = glCreateShader(GL_FRAGMENT_SHADER);
-
-	glShaderSource(vShader, 1, &vShaderSrc, NULL);
-	glCompileShader(vShader);
-	glShaderSource(fShader, 1, &fShaderSrc, NULL);
-	glCompileShader(fShader);
-
-	// Print compilation errors if applicable
-	int vSuccess, fSuccess = 0;
-	char info[512];
-	glGetShaderiv(vShader, GL_COMPILE_STATUS, &vSuccess);
-	glGetShaderiv(fShader, GL_COMPILE_STATUS, &fSuccess);
-	if (!vSuccess) {
-		glGetShaderInfoLog(vShader, 512, NULL, info);
-		std::cout << "Vertex shader compilation failed: " << info << std::endl;
-	} else	std::cout << "Vertex shader successfully compiled!" << std::endl;
-	if (!fSuccess) {
-		glGetShaderInfoLog(fShader, 512, NULL, info);
-		std::cout << "Fragment shader compilation failed: " << info << std::endl;
-	} else	std::cout << "Fragment shader successfully compiled!" << std::endl;
-
-	// Link shaders
-	unsigned shaderProgram;
-	shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vShader);
-	glAttachShader(shaderProgram, fShader);
-	glLinkProgram(shaderProgram);
-
-	// Check for shader link errors
-	vSuccess = 0;
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &vSuccess);
-	if (!vSuccess) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, info);
-		std::cout << "Shader program linking failed: " << info << std::endl;
-	} else std::cout << "Shader program successfully linked!" << std::endl;
-
-	// Once shaders are linked into program, we can delete
-	glDeleteShader(vShader);
-	glDeleteShader(fShader);
-
+	Shader shaderProg = Shader(vShaderName.c_str(), fShaderName.c_str());
+	
 	// Vertex data for two triangles forming a square.
 	// All vertexes are shared except the two corners opposite the hypotenuse.
 	float vertices[] = {
-		0.5f, 0.5f, 0.0f,	// Top right
-		0.5f, -0.5f, 0.0f,	// Bottom right
-		-0.5f, -0.5f, 0.0f,	// Bottom left
-		-0.5f, 0.5f, 0.0f,	// Top left
-		0.0f, 0.75f, 0.0f	// Top center
+		// Position			// Color
+		0.5f, 0.5f, 0.0f,	1.0f, 0.0f, 0.0f,	// Top right
+		0.5f, -0.5f, 0.0f,	0.0f, 1.0f, 0.0f,	// Bottom right
+		-0.5f, -0.5f, 0.0f,	0.0f, 0.0f, 1.0f,	// Bottom left
+		-0.5f, 0.5f, 0.0f,	0.8f, 0.2f, 0.5f,	// Top left
+		0.0f, 0.75f, 0.0f,	0.2f, 0.8f, 0.5f	// Top center
 	};
 
 	// Define two triangles based on shared vertices
 	unsigned indices[] = {
 		0, 1, 3,	// First triangle (top right, bottom right, top left)
 		1, 2, 3,	// Second triangle (bottom right, bottom left, top left)
-		3, 4, 0		// Third triangle (tip)
+		0, 4, 3		// Third triangle (tip)
 	};
 
 	// Vertex array object - holds all below calls
@@ -196,16 +141,17 @@ int main(int argc, char **argv)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	/**** glVertexAttribPointer() - Define how to interpret vertex data
-	0				  attribute to configure - simple shader only has element 0 (position)
+	0				  attribute to configure - 0 is position, 1 is color
 	3				  elements per vertex
 	GL_FLOAT		  datatype of 3 elements
 	GL_FALSE		  do not normalize
 	3 * sizeof(float) size in bytes of each vertex
-	(void*)0		  offset, beginning of data in vertex array  ****/
+	(void*)0		  offset- where the first chunk begins relative to beginning of array  ****/
 	// Note: we can only call this after binding VBO above
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(0);
-
+	glEnableVertexAttribArray(1);
 	
 	std::cout << "Entering render loop..." << std::endl;
 
@@ -214,8 +160,17 @@ int main(int argc, char **argv)
 	{
 		// Input processing (automatically handled by callback - no call in render loop)
 
+		// Update triangle color gradually thru a uniform
+		float timeVal = (float) glfwGetTime();
+		float greenVal = (sin(timeVal) / 2.0f) + 0.5f;
+		//int uniformLocation = glGetUniformLocation(shaderProgram, "ourColor");
+
 		// Set up to draw triangle
-		glUseProgram(shaderProgram);
+		shaderProg.use();
+		shaderProg.setFloat("xOffset", greenVal);
+
+		//glUniform4f(uniformLocation, 0.0f, greenVal, 0.0f, 1.0f);	// Pass the updated color val to frag shader
+
 		glBindVertexArray(vao);		// This also binds attached EBO
 
 		// Clear background to cornflower blue
@@ -227,6 +182,7 @@ int main(int argc, char **argv)
 		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
 
 		glBindVertexArray(0);	// ?????
+		glBindVertexArray(1);
 
 		// Process events and swap buffers
 		glfwSwapBuffers(window);
