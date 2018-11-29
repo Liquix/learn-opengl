@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "Shader.h"
+#include "stb_image.h"
 
 #define X_RESOLUTION 640
 #define Y_RESOLUTION 480
@@ -104,22 +105,47 @@ int main(int argc, char **argv)
 	// Load shaders
 	Shader shaderProg = Shader(vShaderName.c_str(), fShaderName.c_str());
 	
+	// Load texture images
+	int texWidth, texHeight, texChannels;
+	unsigned char *data = stbi_load("../container.jpg", &texWidth, &texHeight, &texChannels, 0);
+
+	// Create textures
+	unsigned texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+		std::cout << "Failed to load image: ../container.jpg" << std::endl;
+
+	// Set texture AA / wrapping options
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Free memory from loading texture images
+	stbi_image_free(data);
+
 	// Vertex data for two triangles forming a square.
 	// All vertexes are shared except the two corners opposite the hypotenuse.
 	float vertices[] = {
-		// Position			// Color
-		0.5f, 0.5f, 0.0f,	1.0f, 0.0f, 0.0f,	// Top right
-		0.5f, -0.5f, 0.0f,	0.0f, 1.0f, 0.0f,	// Bottom right
-		-0.5f, -0.5f, 0.0f,	0.0f, 0.0f, 1.0f,	// Bottom left
-		-0.5f, 0.5f, 0.0f,	0.8f, 0.2f, 0.5f,	// Top left
-		0.0f, 0.75f, 0.0f,	0.2f, 0.8f, 0.5f	// Top center
+		// Position			// Color			// TexCoord
+		0.5f, 0.5f, 0.0f,	1.0f, 0.0f, 0.0f,	1.0f, 1.0f,	// Top right
+		0.5f, -0.5f, 0.0f,	0.0f, 1.0f, 0.0f,	1.0f, 0.0f,	// Bottom right
+		-0.5f, -0.5f, 0.0f,	0.0f, 0.0f, 1.0f,	0.0f, 0.0f,	// Bottom left
+		-0.5f, 0.5f, 0.0f,	0.8f, 0.2f, 0.5f,	0.0f, 1.0f	// Top left
+		//0.0f, 0.75f, 0.0f,	0.2f, 0.8f, 0.5f	// Top center
 	};
 
 	// Define two triangles based on shared vertices
 	unsigned indices[] = {
 		0, 1, 3,	// First triangle (top right, bottom right, top left)
-		1, 2, 3,	// Second triangle (bottom right, bottom left, top left)
-		0, 4, 3		// Third triangle (tip)
+		1, 2, 3	// Second triangle (bottom right, bottom left, top left)
+		//0, 4, 3		// Third triangle (tip)
 	};
 
 	// Vertex array object - holds all below calls
@@ -141,17 +167,19 @@ int main(int argc, char **argv)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	/**** glVertexAttribPointer() - Define how to interpret vertex data
-	0				  attribute to configure - 0 is position, 1 is color
+	0				  attribute to configure - 0 is position, 1 is color, 2 is texture
 	3				  elements per vertex
 	GL_FLOAT		  datatype of 3 elements
 	GL_FALSE		  do not normalize
 	3 * sizeof(float) size in bytes of each vertex
 	(void*)0		  offset- where the first chunk begins relative to beginning of array  ****/
 	// Note: we can only call this after binding VBO above
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
 	
 	std::cout << "Entering render loop..." << std::endl;
 
@@ -169,6 +197,9 @@ int main(int argc, char **argv)
 		shaderProg.use();
 		shaderProg.setFloat("xOffset", greenVal);
 
+		// Texturing
+		glBindTexture(GL_TEXTURE_2D, texture);
+
 		//glUniform4f(uniformLocation, 0.0f, greenVal, 0.0f, 1.0f);	// Pass the updated color val to frag shader
 
 		glBindVertexArray(vao);		// This also binds attached EBO
@@ -179,10 +210,11 @@ int main(int argc, char **argv)
 
 		// Draw triangle from EBO bound to ELEMENT_ARRAY_BUFFER
 		// glDrawElements(mode, numVertices, indexDataType, offset)
-		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glBindVertexArray(0);	// ?????
 		glBindVertexArray(1);
+		glBindVertexArray(2);
 
 		// Process events and swap buffers
 		glfwSwapBuffers(window);
