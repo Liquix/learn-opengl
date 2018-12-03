@@ -1,3 +1,6 @@
 *.VC.db
 **/Debug/
-OpenGL_HelloWindow/OpenGL_Template.VC.VC.opendb
+*.opendb
+*.pdb
+**/x64/
+*.VC.db
