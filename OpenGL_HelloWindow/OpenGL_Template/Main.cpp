@@ -17,6 +17,9 @@
 std::string vShaderName = "FirstVertex.vert";
 std::string fShaderName = "FirstFrag.frag";
 
+// Load shaders
+Shader *shaderProg = nullptr;
+
 void handleError(int errorCode, const char* errorDescription)
 {
 	std::cout << "GLFW Error! Code: " << errorCode << ". Description: " << errorDescription << std::endl;
@@ -44,6 +47,15 @@ void keypressCallback(GLFWwindow *window, int key, int scancode, int action, int
 		if (pMode[0] == GL_FILL)	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		if (pMode[0] == GL_LINE)	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
+	if (key == GLFW_KEY_R && action == GLFW_PRESS)
+	{
+		//glDeleteProgram(shaderProg->ID);
+		//delete shaderProg;
+		shaderProg = new Shader(vShaderName.c_str(), fShaderName.c_str());
+		shaderProg->use();
+		shaderProg->setInt("customTexture", 0);
+		shaderProg->setInt("customTexture2", 1);
+	}
 }
 
 int main(int argc, char **argv)
@@ -70,7 +82,7 @@ int main(int argc, char **argv)
 		std::cout << "monitor[" << i << "] address: " << monitors[i] << std::endl;
 	std::cout << "Primary monitor: " << glfwGetPrimaryMonitor() << std::endl; */
 
-	GLFWwindow* window = glfwCreateWindow(X_RESOLUTION, Y_RESOLUTION, "Learn OpenGL - Hello Window", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(X_RESOLUTION, Y_RESOLUTION, "Learn OpenGL - Texture Blending", NULL, NULL);
 	if (!window)
 	{
 		std::cout << "Error: glfwCreateWindow() failed" << std::endl;
@@ -89,10 +101,10 @@ int main(int argc, char **argv)
 	}
 
 	// Init success! Print library info
-	std::cout << "Initialization successful!" << std::endl 
-		<< "OpenGL version info:\t" << glGetString(GL_VERSION) << std::endl
-		<< "GLFW version info:\t" << glfwGetVersionString() << std::endl
+	std::cout << "OpenGL version:\t" << glGetString(GL_VERSION) << std::endl
+		<< "GLFW version:\t" << glfwGetVersionString() << std::endl
 		<< "\nPress W to toggle wireframe mode." << std::endl
+		<< "Press R to hot reload shaders." << std::endl
 		<< "Press ESC to close OpenGL window.\n" << std::endl;
 
 	// Now we can start calling OpenGL functions. Set up viewport
@@ -103,7 +115,7 @@ int main(int argc, char **argv)
 	glfwSetKeyCallback(window, keypressCallback);
 	
 	// Load shaders
-	Shader shaderProg = Shader(vShaderName.c_str(), fShaderName.c_str());
+	shaderProg = new Shader(vShaderName.c_str(), fShaderName.c_str());
 	
 	// Load texture images
 	int texWidth, texHeight, texChannels;
@@ -112,6 +124,7 @@ int main(int argc, char **argv)
 	// Create textures
 	unsigned texture;
 	glGenTextures(1, &texture);
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	if (data)
 	{
@@ -120,6 +133,26 @@ int main(int argc, char **argv)
 	}
 	else
 		std::cout << "Failed to load image: ../container.jpg" << std::endl;
+
+	unsigned texture2;
+	glGenTextures(1, &texture2);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, texture2);
+	data = nullptr;
+	stbi_set_flip_vertically_on_load(true);
+	data = stbi_load("../face.png", &texWidth, &texHeight, &texChannels, 0);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+		std::cout << "Failed to load image: ../face.png" << std::endl;
+
+	// Set texture sampler uniforms
+	shaderProg->use();
+	shaderProg->setInt("customTexture", 0);
+	shaderProg->setInt("customTexture2", 1);
 
 	// Set texture AA / wrapping options
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -194,11 +227,14 @@ int main(int argc, char **argv)
 		//int uniformLocation = glGetUniformLocation(shaderProgram, "ourColor");
 
 		// Set up to draw triangle
-		shaderProg.use();
-		shaderProg.setFloat("xOffset", greenVal);
+		shaderProg->use();
+		shaderProg->setFloat("xOffset", greenVal);
 
 		// Texturing
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
 
 		//glUniform4f(uniformLocation, 0.0f, greenVal, 0.0f, 1.0f);	// Pass the updated color val to frag shader
 

@@ -56,8 +56,7 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 	const char* vShaderSrc = vertexStr.c_str();
 	const char* fShaderSrc = fragmentStr.c_str();
 
-	std::cout << "Successfully loaded vertex shader from " << vertexPath << "!" << std::endl
-		<< "Successfully loaded fragment shader from " << fragmentPath << "!" << std::endl;
+	//std::cout << "Successfully loaded vertex shader from " << vertexPath << "!" << std::endl << "Successfully loaded fragment shader from " << fragmentPath << "!" << std::endl;
 
 	// Compile shaders
 	unsigned vShader, fShader;
@@ -78,12 +77,12 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 		glGetShaderInfoLog(vShader, 512, NULL, info);
 		std::cout << "Vertex shader compilation failed: " << info << std::endl;
 	}
-	else	std::cout << "Vertex shader successfully compiled!" << std::endl;
+	else	std::cout << "Vertex shader compiled: " << vertexPath << std::endl;
 	if (!fSuccess) {
 		glGetShaderInfoLog(fShader, 512, NULL, info);
 		std::cout << "Fragment shader compilation failed: " << info << std::endl;
 	}
-	else	std::cout << "Fragment shader successfully compiled!" << std::endl;
+	else	std::cout << "Fragment shader compiled: " << fragmentPath << std::endl;
 
 	// Link shaders into program
 	ID = glCreateProgram();
@@ -98,7 +97,7 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 		glGetProgramInfoLog(ID, 512, NULL, info);
 		std::cout << "Shader program linking failed: " << info << std::endl;
 	}
-	else std::cout << "Shader program successfully linked!" << std::endl;
+	//else std::cout << "Shader program successfully linked!" << std::endl;
 
 	// Once shaders are linked into program, we can delete
 	glDeleteShader(vShader);
