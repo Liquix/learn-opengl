@@ -14,21 +14,19 @@ in vec2 fragCoord;
 //		B) The iterates never exceed 2. The input c is in the mandelbrot set.
 //			- Color is usually black (constant) for all values in set.
 
-//uniform vec2 center;
 uniform float scale;
 uniform vec2 center;
+uniform int max_iterations;
 
 void main()
 {
 	vec2 z, c;
-	int max_iterations = 50;
 
-	//c.x = 1.3333 * fragCoord.x - 0.5;
-	//c.y = fragCoord.y;
 	c = fragCoord + center;
-	c.x = c.x * 1.3333 - 0.5;
-	//c.x = fragCoord.x * (1.3333) - 0.5;		// Why multiply by aspect ratio here? I understand the X offset
-	//c.y = fragCoord.y * (480 - 0) / 480 + 0;
+	c.x = c.x * 1.3333 - 0.5;	// Why multiply by aspect ratio here? I understand the X offset
+
+	// To normalize a float x within range [xMin, xMax] to [-1, 1]:
+	//		xNorm = 2 * ( (x - xMin) / (xMax - xMin) ) -1
 
 	// zoom
 	c = c * scale;

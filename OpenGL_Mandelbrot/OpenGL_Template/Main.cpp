@@ -15,7 +15,8 @@
 #define Y_RESOLUTION 480
 
 std::string vShaderName = "FirstVertex.vert";
-std::string fShaderName = "FirstFrag.frag";
+std::string fShaderName = "Mandelbrot.frag";
+float zoom = 1.5f;
 
 // Load shaders
 Shader *shaderProg = nullptr;
@@ -55,6 +56,23 @@ void keypressCallback(GLFWwindow *window, int key, int scancode, int action, int
 	}
 }
 
+void mouseClickCallback(GLFWwindow *window, int button, int action, int mods)
+{
+	double xMouse, yMouse;
+	glfwGetCursorPos(window, &xMouse, &yMouse);
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{
+		std::cout << "Click: (" << xMouse / X_RESOLUTION << ", " << yMouse / Y_RESOLUTION << ")" << std::endl;
+		//shaderProg->setVec2("center", (float)xMouse / X_RESOLUTION, (float)yMouse / Y_RESOLUTION);
+	}
+}
+
+void mouseScrollCallback(GLFWwindow *window, double xOffset, double yOffset)
+{
+	zoom += -(float)yOffset * 0.05f;
+	shaderProg->setFloat("scale", zoom);
+}
+
 int main(int argc, char **argv)
 {
 	// Initialize GLFW
@@ -71,7 +89,6 @@ int main(int argc, char **argv)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
 
 	GLFWwindow* window = glfwCreateWindow(X_RESOLUTION, Y_RESOLUTION, "Learn OpenGL - Mandelbrot Fragment Shader", NULL, NULL);
 	if (!window)
@@ -104,8 +121,13 @@ int main(int argc, char **argv)
 
 	// Input
 	glfwSetKeyCallback(window, keypressCallback);
+	glfwSetMouseButtonCallback(window, mouseClickCallback);
+	glfwSetScrollCallback(window, mouseScrollCallback);
 	
 	shaderProg = new Shader(vShaderName.c_str(), fShaderName.c_str());
+	shaderProg->use();
+	shaderProg->setInt("max_iterations", 50);
+	shaderProg->setFloat("scale", zoom);
 
 	// Vertex data for two triangles forming a square.
 	float vertices[] = {
@@ -156,16 +178,16 @@ int main(int argc, char **argv)
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
-		// Input processing (automatically handled by callback - no call in render loop)
-
-		// Update triangle color gradually thru a uniform
-		float timeVal = (float) glfwGetTime();
-		float greenVal = (sin(timeVal) / 2.0f) + 0.5f;
-		//int uniformLocation = glGetUniformLocation(shaderProgram, "ourColor");
-
-		// Set up to draw triangle
 		shaderProg->use();
-		//shaderProg.setFloat("xOffset", greenVal);
+
+		// Update mandelbrot scale and center
+		float timeVal = (float) glfwGetTime();
+		float greenVal = (sin(timeVal) / 2.0f) + 1.0f;
+
+		
+		//shaderProg->setFloat("scale", greenVal);
+		
+		//shaderProg->setVec2("center", 0, 0);
 
 		glBindVertexArray(vao);		// This also binds attached EBO
 

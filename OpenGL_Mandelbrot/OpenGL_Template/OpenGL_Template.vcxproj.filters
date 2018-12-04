@@ -35,6 +35,9 @@
     <None Include="FirstVertex.vert">
       <Filter>Source Files\Shaders</Filter>
     </None>
+    <None Include="Mandelbrot.frag">
+      <Filter>Source Files\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">

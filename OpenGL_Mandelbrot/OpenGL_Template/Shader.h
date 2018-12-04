@@ -20,6 +20,7 @@ public:
 	void setBool(const std::string &name, bool value) const;
 	void setInt(const std::string &name, int value) const;
 	void setFloat(const std::string &name, float value) const;
+	void setVec2(const std::string &name, float xValue, float yValue) const;
 };
 
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
@@ -122,6 +123,11 @@ void Shader::setInt(const std::string &name, int value) const
 void Shader::setFloat(const std::string &name, float value) const
 {
 	glUniform1f(glGetUniformLocation(ID, name.c_str()), (float)value);
+}
+
+void Shader::setVec2(const std::string &name, float xValue, float yValue) const
+{
+	glUniform2f(glGetUniformLocation(ID, name.c_str()), xValue, yValue);
 }
 
 #endif

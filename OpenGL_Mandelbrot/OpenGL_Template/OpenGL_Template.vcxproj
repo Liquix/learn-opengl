@@ -133,6 +133,7 @@
   <ItemGroup>
     <None Include="FirstFrag.frag" />
     <None Include="FirstVertex.vert" />
+    <None Include="Mandelbrot.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h" />
