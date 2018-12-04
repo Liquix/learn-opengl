@@ -4,3 +4,5 @@
 *.pdb
 **/x64/
 *.VC.db
+*.TMP
+*.db

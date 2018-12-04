@@ -14,9 +14,211 @@
 #define X_RESOLUTION 640
 #define Y_RESOLUTION 480
 
+GLfloat colorData[] = {
+	222,119,111,
+	224,119,115,
+	225,120,118,
+	226,120,122,
+	227,121,126,
+	228,122,129,
+	229,122,133,
+	229,123,137,
+	230,124,141,
+	230,125,144,
+	230,126,148,
+	230,127,152,
+	230,129,156,
+	229,130,160,
+	229,131,163,
+	228,133,167,
+	227,135,171,
+	226,136,175,
+	225,138,178,
+	223,140,182,
+	222,142,185,
+	220,144,189,
+	218,146,192,
+	216,148,196,
+	214,150,199,
+	211,152,202,
+	209,154,205,
+	206,156,208,
+	203,158,211,
+	200,161,214,
+	197,163,217,
+	194,165,219,
+	190,167,222,
+	187,170,224,
+	183,172,226,
+	179,174,228,
+	175,176,230,
+	171,179,232,
+	167,181,233,
+	162,183,234,
+	158,185,236,
+	154,187,237,
+	149,189,238,
+	144,192,238,
+	140,194,239,
+	135,196,239,
+	130,198,240,
+	126,200,240,
+	121,202,239,
+	116,204,239,
+	111,205,239,
+	107,207,238,
+	102,209,237,
+	98,211,236,
+	94,213,235,
+	90,214,234,
+	86,216,232,
+	82,218,231,
+	79,219,229,
+	77,221,227,
+	75,222,225,
+	73,224,223,
+	72,225,221,
+	72,227,218,
+	72,228,216,
+	73,229,213,
+	74,231,210,
+	76,232,207,
+	79,233,204,
+	82,234,201,
+	85,235,198,
+	89,236,195,
+	93,237,192,
+	97,238,188,
+	102,239,185,
+	107,240,182,
+	111,241,178,
+	116,242,175,
+	121,243,171,
+	127,243,168,
+	132,244,164,
+	137,245,161,
+	143,245,157,
+	148,246,154,
+	153,246,151,
+	159,247,147,
+	164,247,144,
+	170,247,141,
+	176,248,138,
+	181,248,134,
+	187,248,131,
+	193,248,129,
+	198,248,126,
+	204,248,123,
+	210,248,121,
+	216,248,118,
+	221,248,116,
+	227,248,114,
+	233,248,112,
+	239,247,111,
+	233,248,112,
+	227,248,114,
+	221,248,116,
+	216,248,118,
+	210,248,121,
+	204,248,123,
+	198,248,126,
+	193,248,129,
+	187,248,131,
+	181,248,134,
+	176,248,138,
+	170,247,141,
+	164,247,144,
+	159,247,147,
+	153,246,151,
+	148,246,154,
+	143,245,157,
+	137,245,161,
+	132,244,164,
+	127,243,168,
+	121,243,171,
+	116,242,175,
+	111,241,178,
+	107,240,182,
+	102,239,185,
+	97,238,188,
+	93,237,192,
+	89,236,195,
+	85,235,198,
+	82,234,201,
+	79,233,204,
+	76,232,207,
+	74,231,210,
+	73,229,213,
+	72,228,216,
+	72,227,218,
+	72,225,221,
+	73,224,223,
+	75,222,225,
+	77,221,227,
+	79,219,229,
+	82,218,231,
+	86,216,232,
+	90,214,234,
+	94,213,235,
+	98,211,236,
+	102,209,237,
+	107,207,238,
+	111,205,239,
+	116,204,239,
+	121,202,239,
+	126,200,240,
+	130,198,240,
+	135,196,239,
+	140,194,239,
+	144,192,238,
+	149,189,238,
+	154,187,237,
+	158,185,236,
+	162,183,234,
+	167,181,233,
+	171,179,232,
+	175,176,230,
+	179,174,228,
+	183,172,226,
+	187,170,224,
+	190,167,222,
+	194,165,219,
+	197,163,217,
+	200,161,214,
+	203,158,211,
+	206,156,208,
+	209,154,205,
+	211,152,202,
+	214,150,199,
+	216,148,196,
+	218,146,192,
+	220,144,189,
+	222,142,185,
+	223,140,182,
+	225,138,178,
+	226,136,175,
+	227,135,171,
+	228,133,167,
+	229,131,163,
+	229,130,160,
+	230,129,156,
+	230,127,152,
+	230,126,148,
+	230,125,144,
+	230,124,141,
+	229,123,137,
+	229,122,133,
+	228,122,129,
+	227,121,126,
+	226,120,122,
+	225,120,118,
+	224,119,115,
+	222,119,111 };
+
 std::string vShaderName = "FirstVertex.vert";
 std::string fShaderName = "Mandelbrot.frag";
 float zoom = 1.5f;
+unsigned maxIterations = 50;
 
 // Load shaders
 Shader *shaderProg = nullptr;
@@ -53,6 +255,22 @@ void keypressCallback(GLFWwindow *window, int key, int scancode, int action, int
 		glDeleteProgram(shaderProg->ID);
 		delete shaderProg;
 		shaderProg = new Shader(vShaderName.c_str(), fShaderName.c_str());
+		shaderProg->use();
+		shaderProg->setInt("max_iterations", maxIterations);
+		shaderProg->setFloat("scale", zoom);
+		glUniform3fv(glGetUniformLocation(shaderProg->ID, "colors"), 600, colorData);
+	}
+	if (key == GLFW_KEY_Q && action == GLFW_PRESS)
+	{
+		maxIterations += 10;
+		std::cout << "Iteration depth increased to " << maxIterations << "." << std::endl;
+		shaderProg->setInt("max_iterations", maxIterations);
+	}
+	if (key == GLFW_KEY_E && action == GLFW_PRESS)
+	{
+		maxIterations -= 10;
+		std::cout << "Iteration depth decreased to " << maxIterations << "." << std::endl;
+		shaderProg->setInt("max_iterations", maxIterations);
 	}
 }
 
@@ -113,6 +331,8 @@ int main(int argc, char **argv)
 		<< "GLFW version:\t" << glfwGetVersionString() << std::endl
 		<< "\nPress W to toggle wireframe mode." << std::endl
 		<< "Press R to hot reload shaders." << std::endl
+		<< "Use the mouse wheel to zoom in and out." << std::endl
+		<< "Press Q or W to increase or decrease max iterations." << std::endl
 		<< "Press ESC to close OpenGL window.\n" << std::endl;
 
 	// Now we can start calling OpenGL functions. Set up viewport
@@ -126,8 +346,10 @@ int main(int argc, char **argv)
 	
 	shaderProg = new Shader(vShaderName.c_str(), fShaderName.c_str());
 	shaderProg->use();
-	shaderProg->setInt("max_iterations", 50);
+	shaderProg->setInt("max_iterations", maxIterations);
 	shaderProg->setFloat("scale", zoom);
+	
+	glUniform3fv(glGetUniformLocation(shaderProg->ID, "colors"), 600, &colorData[0]);
 
 	// Vertex data for two triangles forming a square.
 	float vertices[] = {

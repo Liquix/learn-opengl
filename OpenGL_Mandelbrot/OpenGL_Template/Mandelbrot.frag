@@ -17,19 +17,20 @@ in vec2 fragCoord;
 uniform float scale;
 uniform vec2 center;
 uniform int max_iterations;
+uniform vec3 colors[255];
 
 void main()
 {
 	vec2 z, c;
 
-	c = fragCoord + center;
-	c.x = c.x * 1.3333 - 0.5;	// Why multiply by aspect ratio here? I understand the X offset
+	c = (fragCoord * scale) + center;
+	c.x = c.x * 1.3333 -1;	// Why multiply by aspect ratio here? I understand the X offset
 
 	// To normalize a float x within range [xMin, xMax] to [-1, 1]:
-	//		xNorm = 2 * ( (x - xMin) / (xMax - xMin) ) -1
+	//	x	Norm = 2 * ( (x - xMin) / (xMax - xMin) ) -1
 
 	// zoom
-	c = c * scale;
+	//c = c * scale;
 
 	int i;
 	z = c;
@@ -44,7 +45,21 @@ void main()
 	}
 
 	float q = float(i) / 100.0;
+	vec3 desiredColor = colors[i] / 255.0f;
 
 	if(i == max_iterations)		FragColor = vec4(0, 0, 0, 1.0);
-	else						FragColor = vec4(q * 0.2, q * 0.7, q, 1.0);
+	else						FragColor = vec4(desiredColor, 1.0);//FragColor = vec4(q * 0.2, q * 0.7, q, 1.0);
+	/*
+	else // Experimental continuous coloring escape-time algorithm
+	{
+		float log_two = log(2.0);
+		float log_zn = log(x*x + y*y) / 2.0;
+		float nu = log(log_zn / log_two) / log_two;
+		float normalized_iteration = float(i) + 1.0 - nu;
+		float interp = fract(normalized_iteration);
+		vec3 first_color = colors[int(mod(i, color_count))];
+		vec3 second_color = colors[int(mod(i + 1.0, color_count))];
+		FragColor = vec4(mix(first_color, second_color, interp), 1.0);
+	}*/
+	
 }
