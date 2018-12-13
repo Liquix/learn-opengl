@@ -11,8 +11,8 @@
 #include "Shader.h"
 #include "stb_image.h"
 
-#define X_RESOLUTION 640
-#define Y_RESOLUTION 480
+#define X_RESOLUTION 720
+#define Y_RESOLUTION 720
 
 GLfloat colorData[] = {
 	222,119,111,
@@ -219,6 +219,7 @@ std::string vShaderName = "FirstVertex.vert";
 std::string fShaderName = "Mandelbrot.frag";
 float zoom = 1.5f;
 unsigned maxIterations = 50;
+float xCenter = 0.0f;
 
 // Load shaders
 Shader *shaderProg = nullptr;
@@ -272,6 +273,18 @@ void keypressCallback(GLFWwindow *window, int key, int scancode, int action, int
 		std::cout << "Iteration depth decreased to " << maxIterations << "." << std::endl;
 		shaderProg->setInt("max_iterations", maxIterations);
 	}
+	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+	{
+		xCenter += 0.05f;
+		shaderProg->setVec2("center", xCenter, 0.0f);
+		std::cout << "Moving left horizontally, new X: " << xCenter << std::endl;
+	}
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+	{
+		xCenter -= 0.05f;
+		shaderProg->setVec2("center", xCenter, 0.0f);
+		std::cout << "Moving right horizontally, new X: " << xCenter << std::endl;
+	}
 }
 
 void mouseClickCallback(GLFWwindow *window, int button, int action, int mods)
@@ -280,15 +293,38 @@ void mouseClickCallback(GLFWwindow *window, int button, int action, int mods)
 	glfwGetCursorPos(window, &xMouse, &yMouse);
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 	{
-		std::cout << "Click: (" << xMouse / X_RESOLUTION << ", " << yMouse / Y_RESOLUTION << ")" << std::endl;
-		//shaderProg->setVec2("center", (float)xMouse / X_RESOLUTION, (float)yMouse / Y_RESOLUTION);
+		std::cout << "Click: (" << xMouse << ", " << yMouse << ")" << std::endl;
+		//double mouseRe = (double)xMouse / (X_RESOLUTION / (1 - (-2))) + (-2);
+		//double mouseIm = ((double)yMouse / (Y_RESOLUTION / (1 - (-1))) + (-1)) * -1;
+
+		float mouseRe = (float)xMouse * zoom * (3.0f / (float)X_RESOLUTION) - 2.0f;
+		float mouseIm = (float)yMouse * (2.0f / (float)Y_RESOLUTION) - 1.0f;
+
+		//mouseRe += xCenter;
+
+		//realX = xMouse * (3 / 640) - 2
+		//realY = yMouse * (2 / 480) - 1
+
+		//std::cout << "Click: (" << mouseRe << ", " << -mouseIm << ")" << std::endl;
+		
+		shaderProg->setVec2("center", (float)xMouse, (float)yMouse);
 	}
 }
 
 void mouseScrollCallback(GLFWwindow *window, double xOffset, double yOffset)
 {
-	zoom += -(float)yOffset * 0.05f;
+	if (yOffset > 0.0)
+	{
+		zoom /= 1.05f;
+	}
+	if (yOffset < 0.0)
+	{
+		zoom *= 1.05f;
+	}
+	//zoom += -(float)yOffset;
 	shaderProg->setFloat("scale", zoom);
+
+	std::cout << "Changing zoom level to " << zoom << std::endl;
 }
 
 int main(int argc, char **argv)
@@ -316,7 +352,7 @@ int main(int argc, char **argv)
 		glfwTerminate();
 		return -2;
 	}
-	glfwSetWindowPos(window, 2000, 100);
+	//glfwSetWindowPos(window, 2000, 100);
 	glfwMakeContextCurrent(window);
 
 	// Initialize GLAD
@@ -348,6 +384,8 @@ int main(int argc, char **argv)
 	shaderProg->use();
 	shaderProg->setInt("max_iterations", maxIterations);
 	shaderProg->setFloat("scale", zoom);
+	xCenter = -0.5f;
+	//shaderProg->setVec2("center", xCenter, 0.0f);
 	
 	glUniform3fv(glGetUniformLocation(shaderProg->ID, "colors"), 600, &colorData[0]);
 
@@ -403,13 +441,15 @@ int main(int argc, char **argv)
 		shaderProg->use();
 
 		// Update mandelbrot scale and center
-		float timeVal = (float) glfwGetTime();
-		float greenVal = (sin(timeVal) / 2.0f) + 1.0f;
+		float t = (float)glfwGetTime() / 16.0f;
+		float tDec = t - (int)(t);
+		float x = (int)(sin((int)(t) % 3 + 1.0f + tDec) * (float)X_RESOLUTION) % (X_RESOLUTION / 2);
+		//float y = (int)((sin(t + 1.0f)) * (float)Y_RESOLUTION) % Y_RESOLUTION;
+		float y = x * 2;
 
-		
-		//shaderProg->setFloat("scale", greenVal);
-		
-		//shaderProg->setVec2("center", 0, 0);
+		std::cout << x << std::endl;
+
+		shaderProg->setVec2("center", x, y);
 
 		glBindVertexArray(vao);		// This also binds attached EBO
 
