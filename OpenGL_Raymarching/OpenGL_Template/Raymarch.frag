@@ -10,7 +10,7 @@ uniform float fTime;
 
 int X_RESOLUTION = 1280;
 int Y_RESOLUTION = 720;
-float EPSILON = 0.0001;
+float EPSILON = 0.01;
 
 float sdfSphere(vec3 p, float r)
 {
@@ -19,7 +19,7 @@ float sdfSphere(vec3 p, float r)
 
 // copypaste
 float sdfMandelbulb(vec3 pos) {
-	vec3 z = pos;	// could we change orientation by swizzling to z = pos.yxz for example?
+	vec3 z = pos.xyz;
 	float dr = 1.0;
 	float r = 0.0;
 	for (int i = 0; i < 50; i++) {
@@ -58,15 +58,20 @@ float sdfModInterval1(float p, float size, float start, float numReps)
 
 float sdfScene(vec3 p)
 {
+	// translate x and z based on time
 	float e =  2.0*(1.5+sin(fTime));
 	float eh = e * 0.5;
-	
 	float r =  2.0*(1.5+cos(fTime));
 	float rh = r * 0.5;
 	
+	// infinite 3D domain repition
 	p.x = mod(p.x+eh, e) - eh ;
 	p.z = mod(p.z+rh, r) - rh;
 	p.y = mod(p.y+1.0, 2.0) - 1.0;
+
+	// do not repeat behind camera
+	//if(p.x > 0.5)	return 100;
+
 	//p.x = sdfModInterval1(p.x, 2.0, 0.0, 2.0);
 	float d = sdfSphere(p, 0.5);
 	//float d = sdfMandelbulb(p);
@@ -123,13 +128,18 @@ void main()
 {
 	// uv are fragcoords (pixels) mapped from [xres, yres] to [0, 1]
 	vec2 uv = fragCoord.xy /* / vec2(X_RESOLUTION, Y_RESOLUTION))*/ * vec2(1.7777, 1.0);
-	
-	//vec3 camera = vec3(1.0 + 4.0*sin(fTime), 2.0*cos(fTime), 4.0);
-	vec3 camera = vec3(0, 1.0, 4.0);
-	vec3 target = vec3(0);
 
-	vec3 rayOrigin = camera - target;	// send rays from camera location
-	vec3 rayDir = normalize(vec3(uv, -1.0));	// send one ray per pixel 1.0 clip units into the scene
+	vec3 cameraPos = vec3(1.0 + 4.0*sin(fTime), 2.0*cos(fTime), -4.0);
+	//vec3 cameraPos = vec3(0, 1.0, -4.0);
+	vec3 target = vec3(0);
+	
+	vec3 w = normalize(cameraPos - target);
+	vec3 u = normalize(cross(w, vec3(0.0, 1.0, 0.0)));
+	vec3 v = cross(u, w);
+
+
+	vec3 rayOrigin = cameraPos;	// send rays from camera location
+	vec3 rayDir = normalize(uv.x * u + uv.y * v + 0.75*w);	// send one ray per pixel 1.0 clip units into the scene
 
 	// naive first raymarch attempt
 	float rayDepth = 0.0;
