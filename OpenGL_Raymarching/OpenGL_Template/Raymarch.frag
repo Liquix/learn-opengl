@@ -4,6 +4,8 @@ out vec4 FragColor;
 
 in vec2 fragCoord;
 
+uniform float fTime;
+
 // Raymarch shader
 
 int X_RESOLUTION = 1280;
@@ -17,7 +19,7 @@ float sdfSphere(vec3 p, float r)
 
 // copypaste
 float sdfMandelbulb(vec3 pos) {
-	vec3 z = pos;
+	vec3 z = pos;	// could we change orientation by swizzling to z = pos.yxz for example?
 	float dr = 1.0;
 	float r = 0.0;
 	for (int i = 0; i < 50; i++) {
@@ -41,11 +43,33 @@ float sdfMandelbulb(vec3 pos) {
 	return 0.5*log(r)*r/dr;
 }
 
+float sdfModInterval1(float p, float size, float start, float numReps)
+{
+	float halfSize = size * 0.5;
+	float cell = floor((p + halfSize) / size);
+
+	p = mod(p + halfSize, size) - halfSize;
+
+	if(cell > numReps)	p += size*(cell - numReps);
+	if(cell < start)	p += size*(cell - start);
+
+	return p;
+}
+
 float sdfScene(vec3 p)
 {
-	p.x = mod(p.x+1.0, 2.0) - 1.0;
-	//float d = sdfSphere(p, 0.5);
-	float d = sdfMandelbulb(p);
+	float e =  2.0*(1.5+sin(fTime));
+	float eh = e * 0.5;
+	
+	float r =  2.0*(1.5+cos(fTime));
+	float rh = r * 0.5;
+	
+	p.x = mod(p.x+eh, e) - eh ;
+	p.z = mod(p.z+rh, r) - rh;
+	p.y = mod(p.y+1.0, 2.0) - 1.0;
+	//p.x = sdfModInterval1(p.x, 2.0, 0.0, 2.0);
+	float d = sdfSphere(p, 0.5);
+	//float d = sdfMandelbulb(p);
 	return d;
 }
 vec3 estimateSdfNormal(vec3 p)
@@ -99,29 +123,19 @@ void main()
 {
 	// uv are fragcoords (pixels) mapped from [xres, yres] to [0, 1]
 	vec2 uv = fragCoord.xy /* / vec2(X_RESOLUTION, Y_RESOLUTION))*/ * vec2(1.7777, 1.0);
-	//vec2 uv = fragCoord - vec2(X_RESOLUTION, Y_RESOLUTION) / 2.0;
 	
-	vec3 rayOrigin = vec3(2.0, 0.0, 2.0);	// send rays from camera location
+	//vec3 camera = vec3(1.0 + 4.0*sin(fTime), 2.0*cos(fTime), 4.0);
+	vec3 camera = vec3(0, 1.0, 4.0);
+	vec3 target = vec3(0);
+
+	vec3 rayOrigin = camera - target;	// send rays from camera location
 	vec3 rayDir = normalize(vec3(uv, -1.0));	// send one ray per pixel 1.0 clip units into the scene
 
-	// iq video
-	/*
-	float iDist = intersect(rayOrigin, rayDir);
-
-	vec3 col = vec3(0.0);	// no hit/default = black
-	if(iDist > 0.0)
-	{
-		// if hit draw blue
-		col = vec3(0.0, 0.0, 0.5);
-	}
-
-	FragColor = vec4(col, 1.0);
-	*/
 	// naive first raymarch attempt
 	float rayDepth = 0.0;
-	vec3 col = vec3(0);
+	vec3 col = vec3(0.2, 0.2, 0.2);
 	
-	for(int i = 0; i < 50; i++)	// Raymarch
+	for(int i = 0; i < 100; i++)	// send 100 rays total from camera into scene
 	{
 		float d = sdfScene(rayOrigin + rayDepth * rayDir);
 

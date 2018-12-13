@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 		glfwTerminate();
 		return -2;
 	}
-	//glfwSetWindowPos(window, 2000, 100);
+	glfwSetWindowPos(window, 2000, 100);
 	glfwMakeContextCurrent(window);
 
 	// Initialize GLAD
@@ -154,6 +154,9 @@ int main(int argc, char **argv)
 	while (!glfwWindowShouldClose(window))
 	{
 		shaderProg->use();
+
+		float fTime = glfwGetTime() * 0.1f;
+		shaderProg->setFloat("fTime", fTime);
 
 		glBindVertexArray(vao);		// This also binds attached EBO
 
