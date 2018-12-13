@@ -19,25 +19,34 @@ uniform vec2 center;
 uniform int max_iterations;
 uniform vec3 colors[255];
 
+int X_RESOLUTION = 720;
+int Y_RESOLUTION = 720;
+
+// value, curMin, curMax, finalMin, finalMax
+float map(float s, float a1, float a2, float b1, float b2)
+{
+    return b1 + (s-a1)*(b2-b1)/(a2-a1);
+}
+
 void main()
 {
 	vec2 z, c;
 
-	c = (fragCoord * scale) + center;
-	c.x = c.x * 1.3333 -1;	// Why multiply by aspect ratio here? I understand the X offset
+	vec2 iCenter = vec2(map(center.x, 0, X_RESOLUTION, -2, 1) * 0.3333, map(center.y, 0, Y_RESOLUTION, 0, 1));
 
-	// To normalize a float x within range [xMin, xMax] to [-1, 1]:
-	//	x	Norm = 2 * ( (x - xMin) / (xMax - xMin) ) -1
+	float imag = map(fragCoord.x, 0, 1, -2, 1) * 0.3333;
+	float real = fragCoord.y;
 
-	// zoom
-	//c = c * scale;
+	c = vec2(imag + 0.6667, real);
+
+	c *= scale;
 
 	int i;
 	z = c;
 	for(i = 0; i < max_iterations; i++)
 	{
-		float x = (z.x * z.x - z.y * z.y) + c.x;
-		float y = (z.y * z.x + z.x * z.y) + c.y;
+		float x = (z.x * z.x - z.y * z.y) + iCenter.x;
+		float y = (z.y * z.x + z.x * z.y) + iCenter.y;
 
 		if((x * x + y * y) > 4.0)	break;
 		z.x = x;
@@ -45,7 +54,8 @@ void main()
 	}
 
 	float q = float(i) / 100.0;
-	vec3 desiredColor = colors[i] / 255.0f;
+	vec3 desiredColor = colors[i].xyz / 255.0f;
+	desiredColor.x /= 4.0f;
 
 	if(i == max_iterations)		FragColor = vec4(0, 0, 0, 1.0);
 	else						FragColor = vec4(desiredColor, 1.0);//FragColor = vec4(q * 0.2, q * 0.7, q, 1.0);
